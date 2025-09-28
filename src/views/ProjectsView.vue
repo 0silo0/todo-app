@@ -27,15 +27,31 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">
               📊 Статус
             </label>
-            <select
-              v-model="statusFilter"
-              @change="updateFilters"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-            >
-              <option value="all">Все проекты</option>
-              <option value="active">Активные</option>
-              <option value="completed">Завершенные</option>
-            </select>
+            <div class="custom-select-wrapper">
+              <div 
+                class="custom-select-trigger"
+                @click="toggleStatusSelect"
+              >
+                <span class="selected-value">
+                  {{ getStatusLabel(statusFilter) }}
+                </span>
+                <span class="dropdown-arrow" :class="{ 'dropdown-arrow--open': isStatusSelectOpen }">▼</span>
+              </div>
+              
+              <transition name="select-dropdown">
+                <div v-if="isStatusSelectOpen" class="custom-select-dropdown">
+                  <div 
+                    v-for="option in statusOptions" 
+                    :key="option.value"
+                    class="select-option"
+                    :class="{ 'select-option--selected': statusFilter === option.value }"
+                    @click="selectStatusOption(option.value as any)"
+                  >
+                    <span class="option-text">{{ option.label }}</span>
+                  </div>
+                </div>
+              </transition>
+            </div>
           </div>
           
           <div class="flex items-end">
@@ -246,7 +262,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTodos } from '@/composables/useTodos';
 import { formatDate } from '@/utils/helpers';
@@ -292,6 +308,45 @@ const statusLabels = {
   active: 'Активные',
   completed: 'Завершенные'
 };
+
+const isStatusSelectOpen = ref(false);
+
+const statusOptions = [
+  { value: 'all', label: 'Все проекты' },
+  { value: 'active', label: 'Активные' },
+  { value: 'completed', label: 'Завершенные' }
+];
+
+const getStatusLabel = (status: string) => {
+  const option = statusOptions.find(opt => opt.value === status);
+  return option ? option.label : 'Все проекты';
+};
+
+const toggleStatusSelect = () => {
+  isStatusSelectOpen.value = !isStatusSelectOpen.value;
+};
+
+const selectStatusOption = (status: 'all' | 'active' | 'completed') => {
+  statusFilter.value = status;
+  isStatusSelectOpen.value = false;
+  updateFilters();
+};
+
+// Закрытие при клике вне селектора
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+  if (!target.closest('.custom-select-wrapper')) {
+    isStatusSelectOpen.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 
 const totalProjects = computed(() => projects.value.length);
 const hasActiveFilters = computed(() => {
@@ -380,3 +435,94 @@ watch([searchQuery, statusFilter, selectedTags], () => {
   });
 }, { deep: true });
 </script>
+
+<style lang="scss" scoped>
+.custom-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-size: 0.875rem;
+  
+  &:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.selected-value {
+  flex: 1;
+}
+
+.dropdown-arrow {
+  transition: transform 0.2s ease-in-out;
+  font-size: 0.75rem;
+  color: #6b7280;
+  
+  &--open {
+    transform: rotate(180deg);
+  }
+}
+
+.custom-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 10;
+  margin-top: 0.25rem;
+  overflow: hidden;
+}
+
+.select-option {
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:hover {
+    background: #f9fafb;
+  }
+  
+  &--selected {
+    background: #dbeafe;
+    color: #1e40af;
+    font-weight: 500;
+  }
+}
+
+.select-dropdown-enter-active,
+.select-dropdown-leave-active {
+  transition: all 0.2s ease-in-out;
+}
+
+.select-dropdown-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.select-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+</style>
