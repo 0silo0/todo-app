@@ -66,3 +66,27 @@ npm run type-check
 
 # Линтинг кода
 npm run lint
+
+```
+### Страница с проектами
+![alt text](https://github.com/0silo0/todo-app/blob/assets/projects-page.png)
+
+### Страница создания проекта
+![alt text](https://github.com/0silo0/todo-app/blob/assets/creating-project.png)
+
+### Страница проекта
+![alt text](https://github.com/0silo0/todo-app/blob/assets/project-page.png)
+
+### Блок с задачами
+![alt text](https://github.com/0silo0/todo-app/blob/assets/task-block.png)
+
+### Настройки проекта
+![alt text](https://github.com/0silo0/todo-app/blob/assets/project-settings1.png)
+
+![alt text](https://github.com/0silo0/todo-app/blob/assets/project-settings2.png)
+
+### Экспорт данных
+![alt text](https://github.com/0silo0/todo-app/blob/assets/export-data.png)
+
+### Импорт данных
+![alt text](https://github.com/0silo0/todo-app/blob/assets/import-data.png)
