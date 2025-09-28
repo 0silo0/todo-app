@@ -68,6 +68,49 @@ npm run type-check
 npm run lint
 
 ```
+
+### Пример структуры storage
+```json
+{
+  "projects": [
+    {
+      "id": "54b5e65f-aee6-4850-af4c-716cbf169356",
+      "name": "Тестовый 1",
+      "description": "Очень интересный проект",
+      "color": "#8B5CF6",
+      "tags": ["Работа", "Учеба", "Развлечения"],
+      "availableTags": ["Важное", "Работа", "Личное", "Срочно", "Идея", "ффф", "ввв"],
+      "tasks": [
+        {
+          "id": "572a5fdd-27db-4a1b-b742-e1fbc2ad3d35",
+          "title": "Тест",
+          "status": "in-progress",
+          "tags": [],
+          "subtasks": [],
+          "createdAt": "2025-09-28T17:03:41.367Z",
+          "updatedAt": "2025-09-28T17:03:41.367Z"
+        }
+      ],
+      "createdAt": "2025-09-28T17:02:35.912Z",
+      "updatedAt": "2025-09-28T17:03:41.367Z"
+    }
+  ],
+  "currentProjectId": "54b5e65f-aee6-4850-af4c-716cbf169356",
+  "filters": {
+    "statuses": ["todo", "in-progress", "done"],
+    "tags": [],
+    "search": ""
+  },
+  "projectFilters": {
+    "search": "",
+    "tags": ["Учеба"],
+    "status": "active"
+  },
+  "search": "",
+  "status": "active",
+  "tags": ["Учеба"]
+}
+```
 ### Страница с проектами
 ![alt text](https://github.com/0silo0/todo-app/blob/assets/projects-page.png)
 
