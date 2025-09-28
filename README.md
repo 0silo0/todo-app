@@ -66,5 +66,3 @@ npm run type-check
 
 # Линтинг кода
 npm run lint
-
-![alt text](screenshots/image.png)
