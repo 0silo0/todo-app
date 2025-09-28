@@ -1,45 +1,70 @@
-# todo-app
+# 📝 Vue 3 ToDo List с шифрованием
 
-This template should help get you started developing with Vue 3 in Vite.
+![Vue 3](https://img.shields.io/badge/Vue.js-3.x-green)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-purple)
+![Vite](https://img.shields.io/badge/Vite-7.x-orange)
 
-## Recommended IDE Setup
+Универсальное SPA приложение для управления задачами с мультитиповыми статусами, тегами, подзадачами и шифрованным экспортом данных.
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## ✨ Особенности
 
-## Type Support for `.vue` Imports in TS
+### 🎯 Основной функционал
+- ✅ **CRUD операции** с задачами и проектами
+- 🏷️ **Система тегов** для гибкой организации
+- 📂 **Иерархия проектов** с группировкой задач
+- 🔄 **Три статуса задач**: К выполнению, В процессе, Завершено
+- 📝 **Подзадачи** с поддержкой до 3 уровней вложенности
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+### 🔒 Безопасность и данные
+- 🔐 **Шифрование AES** для экспорта/импорта
+- 💾 **Локальное хранение** (LocalStorage)
+- 📤 **Экспорт данных** в зашифрованном формате
+- 📥 **Импорт данных** с проверкой целостности
 
-## Customize configuration
+### ⚡ Производительность
+- 🚀 **Мгновенная реакция** интерфейса
+- 📊 **Оптимизированные перерисовки** Vue 3
+- 🎯 **Эффективное управление состоянием**
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+## 🛠 Технологический стек
 
-## Project Setup
+| Технология | Назначение |
+|------------|------------|
+| **Vue 3** + Composition API | Основной фреймворк |
+| **TypeScript** | Статическая типизация |
+| **Tailwind CSS** | Утилитарные стили |
+| **SCSS** | Кастомные стили и анимации |
+| **Vite** | Сборка и разработка |
+| **AES Encryption** | Шифрование данных |
+| **LocalStorage** | Хранение данных |
 
-```sh
+## 🚀 Быстрый старт
+
+### Предварительные требования
+- Node.js 20.19.0
+- npm или yarn
+
+### Установка и запуск
+
+```bash
+# Клонирование репозитория
+git clone <your-repo-url>
+cd todo-app
+
+# Установка зависимостей
 npm install
-```
 
-### Compile and Hot-Reload for Development
-
-```sh
+# Запуск в режиме разработки
 npm run dev
-```
 
-### Type-Check, Compile and Minify for Production
-
-```sh
+# Сборка для production
 npm run build
-```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+# Проверка типов TypeScript
+npm run type-check
 
-```sh
-npm run test:unit
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
+# Линтинг кода
 npm run lint
-```
+
+![alt text](screenshots/image.png)
