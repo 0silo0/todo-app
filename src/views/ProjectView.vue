@@ -192,6 +192,18 @@
             :project="currentProject"
             @update:show="showEditModal = $event"
           />
+
+          <AppModal
+            :show="modal.modalState.value.show"
+            :title="modal.modalState.value.title"
+            :message="modal.modalState.value.message"
+            :type="modal.modalState.value.type"
+            :confirm-text="modal.modalState.value.confirmText"
+            :cancel-text="modal.modalState.value.cancelText"
+            @confirm="modal.confirm"
+            @cancel="modal.cancel"
+            @close="modal.close"
+          />
         </div>
       </div>
     </div>
@@ -209,6 +221,8 @@
   import { formatDateTime } from '@/utils/helpers';
   import ExportImportManager from '@/components/ExportImportManager.vue';
   import ProjectEditModal from '@/components/ProjectEditModal.vue';
+  import { useModal } from '@/composables/useModal';
+  import AppModal from '@/components/AppModal.vue';
   
   const router = useRouter();
   const route = useRoute();
@@ -230,6 +244,8 @@
     getProjectTaskCount,
     getProjectProgress
   } = useTodos();
+
+  const modal = useModal();
   
   const newTaskTitle = ref('');
   const selectedStatuses = ref<TaskStatus[]>(filters.value.statuses);
@@ -300,8 +316,9 @@
     updateTask(taskId, updates);
   };
   
-  const handleTaskDelete = (taskId: string) => {
-    if (confirm('Удалить задачу?')) {
+  const handleTaskDelete = async (taskId: string) => {
+    const status = await modal.confirmAction('Вы уверены, что хотите удалить задачу? Все дочерние её задачи также будут удалены.', 'Удаление задачи')
+    if (status) {
       deleteTask(taskId);
     }
   };

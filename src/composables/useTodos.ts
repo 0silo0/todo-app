@@ -135,12 +135,29 @@ export const useTodos = () => {
     const project = projects.value.find(p => p.id === projectId);
     if (!project) return;
 
+    // Рекурсивная функция для удаления задач
+    const deleteTasksRecursively = (taskList: Task[]): Task[] => {
+      if (filter === 'all') {
+        return []; // Удаляем все задачи
+      } else {
+        return taskList.filter(task => {
+          // Если задача не соответствует фильтру, она остается
+          if (task.status !== filter) {
+            // Но нужно проверить ее подзадачи
+            if (task.subtasks && task.subtasks.length > 0) {
+              task.subtasks = deleteTasksRecursively(task.subtasks);
+            }
+            return true;
+          }
+          return false; // Удаляем задачу, соответствующую фильтру
+        });
+      }
+    };
+
     if (filter === 'all') {
-      // Удаляем все задачи проекта
       project.tasks = [];
     } else {
-      // Удаляем задачи по статусу
-      project.tasks = project.tasks.filter(task => task.status !== filter);
+      project.tasks = deleteTasksRecursively(project.tasks);
     }
     saveToStorage();
   };
@@ -152,12 +169,33 @@ export const useTodos = () => {
     const project = projects.value.find(p => p.id === projectId);
     if (!project) return { all: 0, todo: 0, 'in-progress': 0, done: 0 };
 
-    const projectTasks = project.tasks;
+    let all = 0, todo = 0, inProgress = 0, done = 0;
+
+    // Рекурсивная функция для подсчета задач
+    const countTasksRecursively = (taskList: Task[]) => {
+      taskList.forEach(task => {
+        // Считаем текущую задачу
+        all++;
+        switch (task.status) {
+          case 'todo': todo++; break;
+          case 'in-progress': inProgress++; break;
+          case 'done': done++; break;
+        }
+        
+        // Рекурсивно считаем подзадачи
+        if (task.subtasks && task.subtasks.length > 0) {
+          countTasksRecursively(task.subtasks);
+        }
+      });
+    };
+
+    countTasksRecursively(project.tasks);
+
     return {
-      all: projectTasks.length,
-      todo: projectTasks.filter(t => t.status === 'todo').length,
-      'in-progress': projectTasks.filter(t => t.status === 'in-progress').length,
-      done: projectTasks.filter(t => t.status === 'done').length
+      all,
+      todo,
+      'in-progress': inProgress,
+      done
     };
   };
 
@@ -407,22 +445,52 @@ const updateTask = (taskId: string, updates: Partial<Task>) => {
     }
   };
 
-  const noTagCount = computed(() => {
-    return currentProject.value?.tasks.filter(task => 
-      task.tags.length === 0
-    ).length || 0;
-  });
-
   const tagCounts = computed(() => {
     const counts: Record<string, number> = {};
     
-    currentProject.value?.tasks.forEach(task => {
-      task.tags.forEach(tag => {
-        counts[tag] = (counts[tag] || 0) + 1;
+    const countTagsRecursively = (taskList: Task[]) => {
+      taskList.forEach(task => {
+        // Считаем теги текущей задачи
+        task.tags.forEach(tag => {
+          counts[tag] = (counts[tag] || 0) + 1;
+        });
+        
+        // Рекурсивно считаем теги подзадач
+        if (task.subtasks && task.subtasks.length > 0) {
+          countTagsRecursively(task.subtasks);
+        }
       });
-    });
+    };
+    
+    if (currentProject.value?.tasks) {
+      countTagsRecursively(currentProject.value.tasks);
+    }
     
     return counts;
+  });
+
+  const noTagCount = computed(() => {
+    let count = 0;
+    
+    const countNoTagRecursively = (taskList: Task[]) => {
+      taskList.forEach(task => {
+        // Считаем задачи без тегов
+        if (task.tags.length === 0) {
+          count++;
+        }
+        
+        // Рекурсивно считаем подзадачи без тегов
+        if (task.subtasks && task.subtasks.length > 0) {
+          countNoTagRecursively(task.subtasks);
+        }
+      });
+    };
+    
+    if (currentProject.value?.tasks) {
+      countNoTagRecursively(currentProject.value.tasks);
+    }
+    
+    return count;
   });
 
   const filteredTasks = computed(() => {
@@ -446,10 +514,13 @@ const updateTask = (taskId: string, updates: Partial<Task>) => {
           }
         }
         
+        // Если задача проходит фильтры, она включается
         if (matchesStatus && matchesSearch && matchesTags) {
           return true;
         }
         
+        // Если задача не проходит фильтры, но у нее есть подзадачи,
+        // которые проходят фильтры, то задача тоже включается
         const filteredSubtasks = filterTasks(task.subtasks);
         return filteredSubtasks.length > 0;
       }).map(task => ({
@@ -468,7 +539,20 @@ const updateTask = (taskId: string, updates: Partial<Task>) => {
 
   const getProjectTaskCount = (projectId: string): number => {
     const project = projects.value.find(p => p.id === projectId);
-    return project ? project.tasks.length : 0;
+    if (!project) return 0;
+    
+    let totalCount = 0;
+    const countTasksRecursively = (taskList: Task[]) => {
+      taskList.forEach(task => {
+        totalCount++;
+        if (task.subtasks && task.subtasks.length > 0) {
+          countTasksRecursively(task.subtasks);
+        }
+      });
+    };
+    
+    countTasksRecursively(project.tasks);
+    return totalCount;
   };
   
   const getProjectProgress = (projectId: string): number => {

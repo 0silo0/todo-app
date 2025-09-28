@@ -1,15 +1,15 @@
 <template>
   <div class="export-import-manager">
-    <div class="flex space-x-3 mb-4">
+    <div class="action-buttons">
       <button
         @click="showExportModal = true"
-        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+        class="export-btn"
       >
         📤 Экспорт
       </button>
       <button
         @click="showImportModal = true"
-        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+        class="import-btn"
       >
         📥 Импорт
       </button>
@@ -30,25 +30,25 @@
       @confirm="handleExport"
       @cancel="closeExportModal"
     >
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+      <div class="modal-content-wrapper">
+        <div class="form-group">
+          <label class="form-label">
             Пароль для шифрования
           </label>
           <input
             v-model="exportPassword"
             type="password"
             placeholder="Введите пароль..."
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
+            class="form-input"
             @keyup.enter="handleExport"
           />
-          <div v-if="exportPassword && !validatePassword(exportPassword)" class="text-red-500 text-xs mt-1">
+          <div v-if="exportPassword && !validatePassword(exportPassword)" class="validation-error">
             Пароль слишком простой. Используйте минимум 6 символов, буквы и цифры.
           </div>
         </div>
         
-        <div class="bg-blue-50 p-3 rounded-lg">
-          <p class="text-sm text-blue-700">
+        <div class="info-banner info-blue">
+          <p class="info-text">
             💡 Сохраните пароль в надежном месте! Без него невозможно восстановить данные.
           </p>
         </div>
@@ -70,29 +70,29 @@
       @confirm="handleImport"
       @cancel="closeImportModal"
     >
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+      <div class="modal-content-wrapper">
+        <div class="form-group">
+          <label class="form-label">
             Файл для импорта
           </label>
-          <div class="flex items-center space-x-2">
+          <div class="file-input-wrapper">
             <input
               type="file"
               ref="fileInput"
               @change="handleFileSelect"
               accept=".encrypted"
-              class="hidden"
+              class="file-input"
             />
             <button
               @click="selectFile"
-              class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors flex-1 text-left"
+              class="file-select-btn"
             >
               {{ selectedFile ? selectedFile.name : 'Выберите файл...' }}
             </button>
             <button
               v-if="selectedFile"
               @click="clearFile"
-              class="text-red-500 hover:text-red-700 p-2"
+              class="file-clear-btn"
               title="Очистить"
             >
               ×
@@ -100,21 +100,21 @@
           </div>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+        <div class="form-group">
+          <label class="form-label">
             Пароль для дешифрования
           </label>
           <input
             v-model="importPassword"
             type="password"
             placeholder="Введите пароль..."
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
+            class="form-input"
             @keyup.enter="handleImport"
           />
         </div>
 
-        <div class="bg-yellow-50 p-3 rounded-lg">
-          <p class="text-sm text-yellow-700">
+        <div class="info-banner info-yellow">
+          <p class="info-text">
             ⚠️ Внимание: Импорт данных полностью заменит текущие задачи и настройки!
           </p>
         </div>
@@ -135,16 +135,16 @@
       @confirm="confirmImport"
       @cancel="cancelImport"
     >
-      <div class="space-y-3">
-        <p class="text-gray-700">
+      <div class="confirmation-content">
+        <p class="confirmation-text">
           Вы уверены, что хотите импортировать данные?
         </p>
-        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
-          <p class="text-red-700 text-sm font-medium">
+        <div class="warning-banner">
+          <p class="warning-text">
             ⚠️ Внимание: Все текущие задачи и настройки будут полностью заменены!
           </p>
         </div>
-        <p class="text-sm text-gray-600">
+        <p class="confirmation-note">
           Это действие нельзя отменить.
         </p>
       </div>
@@ -317,3 +317,287 @@ const closeImportModal = () => {
   pendingImportData.value = { file: null, password: '' };
 };
 </script>
+
+<style lang="scss" scoped>
+$primary-color: #3b82f6;
+$primary-color-dark: #2563eb;
+$primary-color-light: #dbeafe;
+
+$success-color: #10b981;
+$success-color-dark: #0da271;
+$success-color-light: #d1fae5;
+
+$warning-color: #f59e0b;
+$warning-color-dark: #d97706;
+$warning-color-light: #fef3c7;
+
+$error-color: #ef4444;
+$error-color-dark: #dc2626;
+$error-color-light: #fca5a5;
+
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-500: #6b7280;
+$gray-700: #374151;
+
+$blue-50: #eff6ff;
+$blue-700: #1d4ed8;
+
+$yellow-50: #fefce8;
+$yellow-700: #a16207;
+
+$red-50: #fef2f2;
+$red-700: #b91c1c;
+
+$border-radius: 0.5rem;
+$transition: all 0.2s ease-in-out;
+
+.export-import-manager {
+  .action-buttons {
+    @apply flex space-x-3 mb-4;
+
+    .export-btn,
+    .import-btn {
+      @apply text-white px-4 py-2 rounded-lg transition-colors flex items-center;
+      
+      padding: 0.5rem 1rem;
+      border-radius: $border-radius;
+      transition: $transition;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      
+      &:active {
+        transform: translateY(0);
+      }
+      
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+      }
+    }
+
+    .export-btn {
+      background-color: $success-color;
+      
+      &:hover {
+        background-color: $success-color-dark;
+      }
+    }
+
+    .import-btn {
+      background-color: $primary-color;
+      
+      &:hover {
+        background-color: $primary-color-dark;
+      }
+    }
+  }
+
+  .modal-content-wrapper {
+    @apply space-y-4;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: $gray-700;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+      width: 100%;
+      border: 1px solid $gray-300;
+      border-radius: $border-radius;
+      padding: 0.5rem 0.75rem;
+      transition: $transition;
+      font-size: 0.875rem;
+      
+      &:focus {
+        outline: none;
+        border-color: $primary-color;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      
+      &::placeholder {
+        color: $gray-500;
+      }
+    }
+
+    .validation-error {
+      color: $error-color;
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+  }
+
+  .file-input-wrapper {
+    @apply flex items-center space-x-2;
+
+    .file-input {
+      display: none;
+    }
+
+    .file-select-btn {
+      background-color: $gray-100;
+      color: $gray-700;
+      padding: 0.5rem 1rem;
+      border-radius: $border-radius;
+      transition: $transition;
+      flex: 1;
+      text-align: left;
+      border: 1px solid transparent;
+      font-size: 0.875rem;
+      cursor: pointer;
+      
+      &:hover {
+        background-color: $gray-200;
+        border-color: $gray-300;
+      }
+    }
+
+    .file-clear-btn {
+      color: $error-color;
+      padding: 0.5rem;
+      border-radius: 50%;
+      transition: $transition;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+      
+      &:hover {
+        color: $red-700;
+        background-color: $red-50;
+      }
+    }
+  }
+
+  .info-banner {
+    padding: 0.75rem;
+    border-radius: $border-radius;
+    font-size: 0.875rem;
+    
+    &.info-blue {
+      background-color: $blue-50;
+      
+      .info-text {
+        color: $blue-700;
+        margin: 0;
+      }
+    }
+    
+    &.info-yellow {
+      background-color: $yellow-50;
+      
+      .info-text {
+        color: $yellow-700;
+        margin: 0;
+      }
+    }
+  }
+
+  .confirmation-content {
+    @apply space-y-3;
+
+    .confirmation-text {
+      color: $gray-700;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .warning-banner {
+      background-color: $red-50;
+      border: 1px solid $error-color-light;
+      border-radius: $border-radius;
+      padding: 0.75rem;
+      
+      .warning-text {
+        color: $red-700;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin: 0;
+      }
+    }
+
+    .confirmation-note {
+      font-size: 0.875rem;
+      color: $gray-500;
+      margin: 0;
+    }
+  }
+}
+
+// Адаптивность
+@media (max-width: 640px) {
+  .export-import-manager {
+    .action-buttons {
+      @apply flex-col space-x-0 space-y-2;
+      
+      .export-btn,
+      .import-btn {
+        @apply w-full justify-center;
+      }
+    }
+    
+    .file-input-wrapper {
+      @apply flex-col space-x-0 space-y-2;
+      
+      .file-select-btn {
+        @apply w-full;
+      }
+    }
+  }
+}
+
+// Анимации
+@keyframes button-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.export-btn:focus,
+.import-btn:focus {
+  animation: button-pulse 0.3s ease-in-out;
+}
+
+// Состояния disabled
+.export-btn:disabled,
+.import-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  
+  &:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    background-color: inherit !important;
+  }
+}
+
+.form-input:disabled,
+.file-select-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: $gray-100;
+}
+
+// Плавные переходы для всех интерактивных элементов
+button, input, .file-select-btn {
+  transition: $transition;
+}
+</style>

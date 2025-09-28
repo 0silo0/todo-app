@@ -143,7 +143,6 @@ interface Props {
   maxWidth?: string;                // Кастомная максимальная ширина
 }
 
-/** Эмитируемые события */
 interface Emits {
   (e: 'update:show', value: boolean): void;  // Двусторонняя связь для show
   (e: 'confirm'): void;                      // Подтверждение
@@ -151,7 +150,6 @@ interface Emits {
   (e: 'close'): void;                        // Закрытие
 }
 
-// Значения по умолчанию с учетом UX
 const props = withDefaults(defineProps<Props>(), {
   title: 'Подтверждение',
   message: '',
@@ -224,7 +222,7 @@ const customStyles = computed(() => {
     styles.width = 'calc(100vw - 2rem)';
     styles.height = 'calc(100vh - 2rem)';
   } else if (props.size === 'xl') {
-    styles.width = '90vw'; // Адаптивная ширина для больших модалок
+    styles.width = '90vw';
   }
   
   return styles;
@@ -232,7 +230,6 @@ const customStyles = computed(() => {
 
 // === ОБРАБОТЧИКИ СОБЫТИЙ ===
 
-/** Обработчик подтверждения */
 const handleConfirm = () => {
   if (!props.loading) {
     emit('confirm');
@@ -243,7 +240,6 @@ const handleConfirm = () => {
   }
 };
 
-/** Обработчик отмены */
 const handleCancel = () => {
   if (!props.loading) {
     emit('cancel');
@@ -251,7 +247,6 @@ const handleCancel = () => {
   }
 };
 
-/** Обработчик закрытия */
 const handleClose = () => {
   if (!props.loading) {
     emit('close');
@@ -259,17 +254,13 @@ const handleClose = () => {
   }
 };
 
-/** Обработчик клика на оверлей */
 const handleOverlayClick = () => {
-  // Закрываем только если разрешено и не в состоянии загрузки
   if (props.closeOnOverlay && !props.loading && !props.persistent) {
     handleClose();
   }
 };
 
 // === УПРАВЛЕНИЕ КЛАВИАТУРОЙ ===
-
-/** Обработчик нажатия клавиш */
 const handleKeydown = (event: KeyboardEvent) => {
   // Игнорируем если модалка не показана или заблокирована
   if (!props.show || props.loading || props.persistent) return;
@@ -313,137 +304,128 @@ onUnmounted(() => {
 });
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+$modal-z-index: 1000;
+$modal-overlay-bg: rgba(0, 0, 0, 0.5);
+$modal-border-radius: 0.75rem;
+$modal-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+$modal-transition: 0.3s ease;
+
+// Основные стили модалки
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: $modal-overlay-bg;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: $modal-z-index;
   padding: 1rem;
-  animation: overlay-fade 0.3s ease;
+  animation: overlay-fade $modal-transition;
+
+  @media (max-width: 640px) {
+    @apply p-2;
+  }
 }
 
 .modal-container {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  @apply bg-white;
+  
+  border-radius: $modal-border-radius;
+  box-shadow: $modal-shadow;
   width: 100%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: modal-slide 0.3s ease;
+  animation: modal-slide $modal-transition;
+
+  @media (max-width: 640px) {
+    max-height: 95vh;
+  }
 }
 
 .modal-header {
-  padding: 1.5rem 1.5rem 1rem;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-shrink: 0;
-}
+  @apply px-6 py-4 flex items-start justify-between flex-shrink-0;
 
-.modal-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0;
-  line-height: 1.4;
+  .modal-title {
+    @apply text-xl font-semibold m-0 leading-relaxed truncate;
+  }
 }
 
 .modal-close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: background-color 0.2s;
+  @apply bg-transparent border-none text-2xl cursor-pointer p-1 rounded transition-colors;
+  
   color: inherit;
   line-height: 1;
-  width: 2rem;
+  width: rem;
   height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   margin-left: 0.5rem;
-}
 
-.modal-close-btn:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.2);
-}
+  &:hover:not(:disabled) {
+    @apply bg-white bg-opacity-20;
+  }
 
-.modal-close-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  &:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
 }
 
 .modal-content {
-  flex: 1;
-  overflow-y: auto;
+  @apply flex-1 overflow-y-auto;
   min-height: 0;
 }
 
 .modal-body {
-  padding: 1rem 1.5rem;
+  @apply px-6 py-4;
 }
 
 .modal-footer {
-  padding: 1rem 1.5rem 1.5rem;
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  border-top: 1px solid #f3f4f6;
+  @apply px-6 py-4 flex gap-3 justify-end flex-shrink-0 border-t border-gray-200;
+
+  // Адаптивность
+  @media (max-width: 640px) {
+    @apply flex-col-reverse p-4;
+  }
 }
 
 .modal-btn {
-  padding: 0.625rem 1.25rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  transition: all 0.2s;
-  border: none;
-  cursor: pointer;
-  min-width: 6rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  outline: none;
-  position: relative;
+  @apply px-5 py-2.5 rounded-lg font-medium transition-all border-none cursor-pointer min-w-[6rem] text-sm outline-none relative;
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  }
+
+  // Модификаторы кнопок
+  &-cancel {
+    @apply bg-gray-50 text-gray-700 border border-gray-300;
+
+    &:hover:not(:disabled) {
+      @apply bg-gray-100 border-gray-400;
+    }
+  }
+
+  &-confirm {
+    @apply text-white border border-transparent;
+  }
+
+  // Адаптивность
+  @media (max-width: 640px) {
+    @apply min-w-full w-full;
+  }
 }
 
-.modal-btn:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-}
-
-.modal-btn-cancel {
-  background-color: #f8fafc;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-}
-
-.modal-btn-cancel:hover:not(:disabled) {
-  background-color: #f3f4f6;
-  border-color: #d1d5db;
-}
-
-.modal-btn-confirm {
-  color: white;
-  border: 1px solid transparent;
-}
-
-.modal-btn-confirm:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-}
-
+// Анимации
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity $modal-transition;
 }
 
 .modal-enter-from,
@@ -451,15 +433,24 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-.modal-enter-active .modal-container,
-.modal-leave-active .modal-container {
-  transition: transform 0.3s ease, opacity 0.3s ease;
+.modal-enter-active {
+  .modal-container {
+    transition: transform $modal-transition, opacity $modal-transition;
+  }
 }
 
-.modal-enter-from .modal-container,
-.modal-leave-to .modal-container {
-  transform: scale(0.95) translateY(-10px);
-  opacity: 0;
+.modal-leave-active {
+  .modal-container {
+    transition: transform $modal-transition, opacity $modal-transition;
+  }
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  .modal-container {
+    transform: scale(0.95) translateY(-10px);
+    opacity: 0;
+  }
 }
 
 @keyframes overlay-fade {
@@ -475,34 +466,6 @@ onUnmounted(() => {
   to {
     transform: scale(1) translateY(0);
     opacity: 1;
-  }
-}
-
-@media (max-width: 640px) {
-  .modal-overlay {
-    padding: 0.5rem;
-  }
-  
-  .modal-container {
-    max-height: 95vh;
-  }
-  
-  .modal-header {
-    padding: 1rem 1rem 0.75rem;
-  }
-  
-  .modal-body {
-    padding: 0.75rem 1rem;
-  }
-  
-  .modal-footer {
-    padding: 0.75rem 1rem 1rem;
-    flex-direction: column-reverse;
-  }
-  
-  .modal-btn {
-    min-width: auto;
-    width: 100%;
   }
 }
 </style>

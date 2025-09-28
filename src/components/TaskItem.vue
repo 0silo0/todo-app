@@ -1,15 +1,15 @@
 <template>
-  <div class="task-item group" :class="{'ml-8': depth > 0}">
-    <div class="bg-white rounded-lg border p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200">
-      <div class="flex items-start justify-between">
-        <div class="flex items-start space-x-3 flex-1 min-w-0">
-          <div class="relative">
+  <div class="task-item" :class="{'task-item--nested': depth > 0}">
+    <div class="task-card" :class="taskCardClasses">
+      <div class="task-header">
+        <div class="task-main-content">
+          <div class="status-selector-wrapper">
             <select 
                 :value="task.status"
                 @change="updateStatus($event)"
                 :disabled="isStatusDisabled"
-                class="text-sm bg-white border border-gray-300 rounded-lg px-3 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-                :class="[statusTextClasses[task.status], isStatusDisabled ? 'opacity-70' : '']"
+                class="status-select"
+                :class="[statusTextClasses[task.status], isStatusDisabled ? 'status-select--disabled' : '']"
                 :title="statusDisabledTitle"
             >
                 <option value="todo">📝 К выполнению</option>
@@ -18,52 +18,52 @@
             </select>
             
             <div v-if="isStatusDisabled && task.status !== 'done'" 
-                 class="absolute -top-2 -right-2 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center cursor-help"
+                 class="status-warning-indicator"
                  :title="statusDisabledTitle">
-              <span class="text-xs text-white">!</span>
+              <span class="status-warning-icon">!</span>
             </div>
           </div>
           
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center space-x-2">
+          <div class="task-content">
+            <div class="title-section">
               <input
                 v-if="isEditing"
                 v-model="editedTitle"
                 @blur="saveEdit"
                 @keyup.enter="saveEdit"
                 @keyup.escape="cancelEdit"
-                class="flex-1 border-b-2 border-blue-500 outline-none px-1 bg-transparent text-lg font-medium"
+                class="title-input"
                 type="text"
                 ref="titleInput"
               >
               <h3
                 v-else
                 @dblclick="startEdit"
-                class="text-lg font-medium cursor-text px-1 rounded hover:bg-gray-50 transition-colors"
+                class="task-title"
                 :class="titleClasses"
               >
                 {{ task.title }}
                 <span v-if="hasIncompleteSubtasks && task.status === 'done'" 
-                      class="ml-2 text-yellow-500 text-sm" 
+                      class="incomplete-subtasks-warning" 
                       title="Есть незавершенные подзадачи">
                   ⚠️
                 </span>
               </h3>
             </div>
 
-            <div v-if="hasSubtasks" class="mt-1">
-              <div class="flex items-center space-x-2 text-xs">
-                <span class="text-gray-500">Подзадачи:</span>
-                <div class="flex-1 bg-gray-200 rounded-full h-1.5">
-                  <div class="bg-green-500 h-1.5 rounded-full transition-all duration-300" 
+            <div v-if="hasSubtasks" class="subtasks-progress">
+              <div class="progress-info">
+                <span class="progress-label">Подзадачи:</span>
+                <div class="progress-bar">
+                  <div class="progress-fill" 
                        :style="{ width: subtaskProgress + '%' }"></div>
                 </div>
-                <span class="text-gray-600 font-medium">{{ completedSubtasks }}/{{ totalSubtasks }}</span>
-                <span class="text-gray-500">({{ Math.round(subtaskProgress) }}%)</span>
+                <span class="progress-stats">{{ completedSubtasks }}/{{ totalSubtasks }}</span>
+                <span class="progress-percent">({{ Math.round(subtaskProgress) }}%)</span>
               </div>
             </div>
 
-            <div class="mt-2">
+            <div class="tags-section">
               <TagInput
                 :modelValue="task.tags"
                 :availableTags="availableTags"
@@ -72,30 +72,30 @@
               />
             </div>
 
-            <div class="flex space-x-4 mt-2 text-xs text-gray-500">
-              <span>Создано: {{ formatDate(task.createdAt) }}</span>
-              <span v-if="task.updatedAt !== task.createdAt">
+            <div class="task-meta">
+              <span class="meta-item">Создано: {{ formatDate(task.createdAt) }}</span>
+              <span v-if="task.updatedAt !== task.createdAt" class="meta-item">
                 Обновлено: {{ formatDate(task.updatedAt) }}
               </span>
-              <span v-if="depth > 0" class="text-blue-600">
+              <span v-if="depth > 0" class="meta-item meta-item--level">
                 Уровень: {{ depth + 1 }}/3
               </span>
             </div>
           </div>
         </div>
 
-        <div class="flex space-x-1 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="task-actions">
           <button 
             v-if="canAddSubtask"
             @click="addSubtask"
-            class="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50 transition-colors"
+            class="action-btn action-btn--add"
             :title="subtaskButtonTitle"
           >
             ➕
           </button>
           <button 
             v-else
-            class="text-gray-400 p-2 rounded-lg cursor-not-allowed"
+            class="action-btn action-btn--disabled"
             title="Достигнут максимальный уровень вложенности"
           >
             ➕
@@ -103,7 +103,7 @@
           
           <button 
             @click="$emit('delete', task.id)"
-            class="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors"
+            class="action-btn action-btn--delete"
             title="Удалить"
           >
             🗑️
@@ -111,80 +111,82 @@
         </div>
       </div>
 
-      <div v-if="hasSubtasks" class="mt-3 pt-3 border-t border-gray-100">
-        <div class="flex items-center justify-between mb-2">
+      <div v-if="hasSubtasks" class="subtasks-section">
+        <div class="subtasks-header">
           <button
             @click="showSubtasks = !showSubtasks"
-            class="flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            class="subtasks-toggle"
           >
-            <span>{{ showSubtasks ? '▼' : '▶' }}</span>
-            <span>Подзадачи ({{ task.subtasks.length }})</span>
+            <span class="toggle-icon">{{ showSubtasks ? '▼' : '▶' }}</span>
+            <span class="toggle-label">Подзадачи ({{ task.subtasks.length }})</span>
           </button>
 
           <button 
             v-if="hasIncompleteSubtasks && task.status !== 'done'"
             @click="completeAllSubtasks"
-            class="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600 transition-colors"
+            class="complete-all-btn"
             title="Завершить все подзадачи"
           >
             ✅ Завершить все
           </button>
         </div>
 
-        <div v-if="showSubtasks" class="subtasks-space">
-          <TaskItem
-            v-for="subtask in task.subtasks"
-            :key="subtask.id"
-            :task="subtask"
-            :availableTags="availableTags"
-            :depth="depth + 1"
-            @update="handleSubtaskUpdate"
-            @delete="handleSubtaskDelete"
-            @addSubtask="handleSubtaskAddSubtask"
-            @addTag="handleAddTag"
-            @status-changed="handleSubtaskStatusChange"
-          />
-        </div>
+        <transition name="subtasks-slide">
+          <div v-if="showSubtasks" class="subtasks-container">
+            <TaskItem
+              v-for="subtask in task.subtasks"
+              :key="subtask.id"
+              :task="subtask"
+              :availableTags="availableTags"
+              :depth="depth + 1"
+              @update="handleSubtaskUpdate"
+              @delete="handleSubtaskDelete"
+              @addSubtask="handleSubtaskAddSubtask"
+              @addTag="handleAddTag"
+              @status-changed="handleSubtaskStatusChange"
+            />
+          </div>
+        </transition>
       </div>
 
-      <div v-if="addingSubtask" class="mt-3 pt-3 border-t border-gray-100">
-        <div class="bg-gray-50 rounded-lg p-3">
-          <div class="flex items-center space-x-2 mb-2">
-            <span class="text-sm text-gray-600">
+      <transition name="subtask-form-slide">
+        <div v-if="addingSubtask" class="add-subtask-form">
+          <div class="form-header">
+            <span class="depth-info">
               {{ depth + 1 }}/3 уровень вложенности
             </span>
-            <span v-if="!canAddSubtask" class="text-red-500 text-sm">
+            <span v-if="!canAddSubtask" class="depth-warning">
               ❌ Достигнут максимум
             </span>
           </div>
           
-          <div class="flex space-x-2">
+          <div class="form-controls">
             <input
               v-model="newSubtaskTitle"
               @keyup.enter="confirmAddSubtask"
               @keyup.escape="cancelAddSubtask"
               placeholder="Введите подзадачу..."
-              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              class="subtask-input"
               :disabled="!canAddSubtask"
               ref="subtaskInput"
             >
             <button
               @click="confirmAddSubtask"
               :disabled="!newSubtaskTitle.trim() || !canAddSubtask"
-              class="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              class="btn btn--primary"
               :title="!canAddSubtask ? 'Достигнут максимальный уровень вложенности' : 'Добавить подзадачу'"
             >
               Добавить
             </button>
             <button
               @click="cancelAddSubtask"
-              class="bg-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-400 transition-colors"
+              class="btn btn--secondary"
             >
               Отмена
             </button>
           </div>
         </div>
-      </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -195,6 +197,7 @@ import type { Task, TaskStatus } from '@/types/todo';
 import { formatDate } from '@/utils/helpers';
 import TagInput from './TagInput.vue';
 import { useTodos } from '@/composables/useTodos';
+import { useModal } from '@/composables/useModal';
 
 interface Props {
   task: Task;
@@ -292,9 +295,9 @@ const statusDisabledTitle = computed(() => {
 });
 
 const statusTextClasses: Record<TaskStatus, string> = {
-  'todo': 'text-yellow-700',
-  'in-progress': 'text-blue-700',
-  'done': 'text-green-700'
+  'todo': 'status--todo',
+  'in-progress': 'status--in-progress',
+  'done': 'status--done'
 };
 
 const canAddSubtask = computed(() => props.depth < MAX_DEPTH);
@@ -307,8 +310,13 @@ const subtaskButtonTitle = computed(() => {
 });
 
 const titleClasses = computed(() => ({
-  'line-through text-gray-500': props.task.status === 'done',
-  'text-gray-900': props.task.status !== 'done'
+  'task-title--completed': props.task.status === 'done',
+  'task-title--active': props.task.status !== 'done'
+}));
+
+const taskCardClasses = computed(() => ({
+  'task-card--completed': props.task.status === 'done',
+  'task-card--active': props.task.status !== 'done'
 }));
 
 const startEdit = async () => {
@@ -342,12 +350,6 @@ const updateStatus = (event: Event) => {
     alert(`Нельзя завершить задачу! Завершите сначала все подзадачи (${completedSubtasks.value}/${totalSubtasks.value})`);
     target.value = props.task.status;
     return;
-  }
-  
-  if (newStatus === 'done' && hasSubtasks.value) {
-    if (confirm('Завершить также все подзадачи этой задачи?')) {
-      completeAllSubtasks();
-    }
   }
   
   isStatusAutoUpdated.value = false;
@@ -448,14 +450,615 @@ const handleSubtaskAddSubtask = (parentId: string, title: string, tags: string[]
 };
 </script>
 
-<style scoped>
-.subtasks-space {
-  border-left: 2px solid #e5e7eb;
-  margin-left: 1rem;
-  padding-left: 1rem;
+<style lang="scss" scoped>
+$primary-color: #3b82f6;
+$primary-color-light: #dbeafe;
+$success-color: #10b981;
+$success-color-light: #d1fae5;
+$warning-color: #f59e0b;
+$warning-color-light: #fef3c7;
+$error-color: #ef4444;
+$error-color-light: #fee2e2;
+
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+$gray-700: #374151;
+$gray-800: #1f2937;
+$gray-900: #111827;
+
+$border-radius: 0.5rem;
+$border-radius-lg: 0.75rem;
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+$transition-fast: 0.15s ease-in-out;
+$transition-base: 0.2s ease-in-out;
+$transition-slow: 0.3s ease-in-out;
+
+// Анимации
+@keyframes taskSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.task-item:hover .opacity-0 {
-  opacity: 1 !important;
+@keyframes progressFill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+// Основные стили
+.task-item {
+  animation: taskSlideIn 0.3s ease-out;
+  
+  &--nested {
+    margin-left: 2rem;
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      left: -1rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent 0%, $gray-300 15%, $gray-300 85%, transparent 100%);
+    }
+  }
+}
+
+.task-card {
+  background: white;
+  border-radius: $border-radius-lg;
+  border: 1px solid $gray-200;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  transition: all $transition-slow;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: $gray-300;
+    transition: background-color $transition-base;
+  }
+  
+  &:hover {
+    box-shadow: $shadow-md;
+    transform: translateY(-1px);
+    
+    .task-actions {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  &--completed {
+    background: $gray-50;
+    
+    &::before {
+      background: $success-color;
+    }
+    
+    .task-title--completed {
+      color: $gray-500;
+      text-decoration: line-through;
+    }
+  }
+  
+  &--active {
+    &::before {
+      background: $primary-color;
+    }
+  }
+}
+
+.task-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.task-main-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.status-selector-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.status-select {
+  font-size: 0.875rem;
+  background: white;
+  border: 1px solid $gray-300;
+  border-radius: $border-radius;
+  padding: 0.5rem 0.75rem;
+  font-weight: 500;
+  transition: all $transition-base;
+  cursor: pointer;
+  
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+  
+  &:disabled {
+    background: $gray-100;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  &--disabled {
+    animation: shake 0.5s ease-in-out;
+  }
+  
+  &.status--todo {
+    color: #92400e;
+    border-color: #f59e0b;
+  }
+  
+  &.status--in-progress {
+    color: #1e40af;
+    border-color: $primary-color;
+  }
+  
+  &.status--done {
+    color: #065f46;
+    border-color: $success-color;
+  }
+}
+
+.status-warning-indicator {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: $warning-color;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  animation: pulseGlow 2s infinite;
+  
+  .status-warning-icon {
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    line-height: 1;
+  }
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.title-section {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.title-input {
+  flex: 1;
+  border-bottom: 2px solid $primary-color;
+  outline: none;
+  padding: 0.25rem;
+  background: transparent;
+  font-size: 1.125rem;
+  font-weight: 500;
+  transition: all $transition-base;
+  
+  &:focus {
+    background: $primary-color-light;
+    border-radius: 0.25rem;
+  }
+}
+
+.task-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  cursor: text;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all $transition-base;
+  margin: 0;
+  
+  &:hover {
+    background: $gray-50;
+  }
+  
+  &--active {
+    color: $gray-900;
+  }
+  
+  &--completed {
+    color: $gray-500;
+    text-decoration: line-through;
+  }
+}
+
+.incomplete-subtasks-warning {
+  margin-left: 0.5rem;
+  color: $warning-color;
+  font-size: 0.875rem;
+}
+
+.subtasks-progress {
+  margin: 0.5rem 0;
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.progress-label {
+  color: $gray-500;
+  white-space: nowrap;
+}
+
+.progress-bar {
+  flex: 1;
+  background: $gray-200;
+  border-radius: 0.75rem;
+  height: 0.375rem;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: $success-color;
+  border-radius: 0.75rem;
+  transition: width 0.5s ease-in-out;
+  animation: progressFill 0.8s ease-out;
+  transform-origin: left;
+}
+
+.progress-stats {
+  color: $gray-600;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.progress-percent {
+  color: $gray-500;
+  white-space: nowrap;
+}
+
+.tags-section {
+  margin: 0.5rem 0;
+}
+
+.task-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: $gray-500;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  &--level {
+    color: $primary-color;
+    font-weight: 500;
+  }
+}
+
+.task-actions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: all $transition-base;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  padding: 0.5rem;
+  border-radius: $border-radius;
+  border: none;
+  cursor: pointer;
+  transition: all $transition-base;
+  font-size: 1rem;
+  line-height: 1;
+  
+  &--add {
+    color: $success-color;
+    
+    &:hover {
+      color: #065f46;
+      background: $success-color-light;
+    }
+  }
+  
+  &--delete {
+    color: $error-color;
+    
+    &:hover {
+      color: #b91c1c;
+      background: $error-color-light;
+    }
+  }
+  
+  &--disabled {
+    color: $gray-400;
+    cursor: not-allowed;
+    
+    &:hover {
+      color: $gray-400;
+      background: transparent;
+    }
+  }
+}
+
+.subtasks-section {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid $gray-100;
+}
+
+.subtasks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.subtasks-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: $gray-600;
+  font-size: 0.875rem;
+  transition: color $transition-base;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  
+  &:hover {
+    color: $gray-800;
+    background: $gray-50;
+  }
+  
+  .toggle-icon {
+    transition: transform $transition-base;
+  }
+}
+
+.complete-all-btn {
+  background: $success-color;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: $border-radius;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all $transition-base;
+  
+  &:hover {
+    background: #059669;
+    transform: translateY(-1px);
+  }
+}
+
+// Анимации для подзадач
+.subtasks-slide-enter-active,
+.subtasks-slide-leave-active {
+  transition: all 0.3s ease-in-out;
+}
+
+.subtasks-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.subtasks-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.subtasks-container {
+  border-left: 2px solid $gray-300;
+  margin-left: 0.5rem;
+  padding-left: 0.5rem;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent 0%, $gray-300 20%, $gray-300 80%, transparent 100%);
+  }
+}
+
+// Анимации для формы добавления подзадачи
+.subtask-form-slide-enter-active,
+.subtask-form-slide-leave-active {
+  transition: all 0.25s ease-in-out;
+}
+
+.subtask-form-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+  max-height: 0;
+}
+
+.subtask-form-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+  max-height: 0;
+}
+
+.add-subtask-form {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid $gray-100;
+  background: $gray-50;
+  border-radius: $border-radius;
+  padding: 0.75rem;
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.depth-info {
+  color: $gray-600;
+}
+
+.depth-warning {
+  color: $error-color;
+}
+
+.form-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.subtask-input {
+  flex: 1;
+  border: 1px solid $gray-300;
+  border-radius: $border-radius;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: all $transition-base;
+  
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
+  }
+  
+  &:disabled {
+    background: $gray-100;
+    cursor: not-allowed;
+  }
+}
+
+.btn {
+  padding: 0.5rem 0.75rem;
+  border-radius: $border-radius;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all $transition-base;
+  
+  &--primary {
+    background: $primary-color;
+    color: white;
+    
+    &:hover:not(:disabled) {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+    
+    &:disabled {
+      background: $gray-400;
+      cursor: not-allowed;
+    }
+  }
+  
+  &--secondary {
+    background: $gray-300;
+    color: $gray-700;
+    
+    &:hover {
+      background: $gray-400;
+    }
+  }
+}
+
+// Адаптивность
+@media (max-width: 640px) {
+  .task-item--nested {
+    margin-left: 1rem;
+  }
+  
+  .task-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .task-actions {
+    opacity: 1;
+    transform: none;
+    align-self: flex-end;
+  }
+  
+  .task-main-content {
+    width: 100%;
+  }
+  
+  .task-meta {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .form-controls {
+    flex-direction: column;
+  }
+  
+  .subtasks-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
 }
 </style>
