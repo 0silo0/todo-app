@@ -4,23 +4,40 @@
       <div class="task-header">
         <div class="task-main-content">
           <div class="status-selector-wrapper">
-            <select 
-                :value="task.status"
-                @change="updateStatus($event)"
-                :disabled="isStatusDisabled"
-                class="status-select"
-                :class="[statusTextClasses[task.status], isStatusDisabled ? 'status-select--disabled' : '']"
+            <div class="custom-select-wrapper">
+              <div 
+                class="custom-select-trigger"
+                :class="[statusTextClasses[task.status], isStatusDisabled ? 'custom-select--disabled' : '', isStatusDisabled ? 'custom-select--dimmed' : '']"
+                @click="toggleSelect"
                 :title="statusDisabledTitle"
-            >
-                <option value="todo">📝 К выполнению</option>
-                <option value="in-progress">🔄 В процессе</option>
-                <option value="done">✅ Завершено</option>
-            </select>
-            
-            <div v-if="isStatusDisabled && task.status !== 'done'" 
-                 class="status-warning-indicator"
-                 :title="statusDisabledTitle">
-              <span class="status-warning-icon">!</span>
+                :disabled="isStatusDisabled"
+              >
+                <span class="selected-value">
+                  {{ getStatusText(task.status) }}
+                </span>
+                <span class="dropdown-arrow" :class="{ 'dropdown-arrow--open': isSelectOpen }">▼</span>
+              </div>
+              
+              <transition name="select-dropdown">
+                <div v-if="isSelectOpen" class="custom-select-dropdown">
+                  <div 
+                    v-for="option in statusOptions" 
+                    :key="option.value"
+                    class="select-option"
+                    :class="{ 'select-option--selected': task.status === option.value }"
+                    @click="selectOption(option.value)"
+                  >
+                    <span class="option-icon">{{ option.icon }}</span>
+                    <span class="option-text">{{ option.text }}</span>
+                  </div>
+                </div>
+              </transition>
+              
+              <div v-if="isStatusDisabled && task.status !== 'done'" 
+                  class="status-warning-indicator"
+                  :title="statusDisabledTitle">
+                <span class="status-warning-icon">!</span>
+              </div>
             </div>
           </div>
           
@@ -192,12 +209,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed } from 'vue';
+import { ref, nextTick, computed, onMounted, onUnmounted } from 'vue';
 import type { Task, TaskStatus } from '@/types/todo';
 import { formatDate } from '@/utils/helpers';
 import TagInput from './TagInput.vue';
 import { useTodos } from '@/composables/useTodos';
-import { useModal } from '@/composables/useModal';
 
 interface Props {
   task: Task;
@@ -233,6 +249,58 @@ const wasReopened = ref(false);
 const MAX_DEPTH = 2;
 
 const hasSubtasks = computed(() => props.task.subtasks && props.task.subtasks.length > 0);
+
+const isSelectOpen = ref(false);
+
+const statusOptions: { value: TaskStatus; text: string; icon: string }[] = [
+  { value: 'todo', text: 'К выполнению', icon: '📝' },
+  { value: 'in-progress', text: 'В процессе', icon: '🔄' },
+  { value: 'done', text: 'Завершено', icon: '✅' }
+];
+
+const getStatusText = (status: TaskStatus) => {
+  const option = statusOptions.find(opt => opt.value === status);
+  return option ? `${option.icon} ${option.text}` : '';
+};
+
+const toggleSelect = () => {
+  if (!isStatusDisabled.value) {
+    isSelectOpen.value = !isSelectOpen.value;
+  }
+};
+
+const selectOption = (status: TaskStatus) => {
+  if (status === 'done' && hasIncompleteSubtasks.value) {
+    alert(`Нельзя завершить задачу! Завершите сначала все подзадачи (${completedSubtasks.value}/${totalSubtasks.value})`);
+    return;
+  }
+  
+  if (status === 'done' && hasSubtasks.value) {
+    if (confirm('Завершить также все подзадачи этой задачи?')) {
+      completeAllSubtasks();
+    }
+  }
+  
+  emit('update', props.task.id, { status });
+  emit('status-changed', props.task.id, status);
+  isSelectOpen.value = false;
+};
+
+// Закрытие при клике вне селектора
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+  if (!target.closest('.custom-select-wrapper')) {
+    isSelectOpen.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 
 const totalSubtasks = computed(() => {
   if (!hasSubtasks.value) return 0;
@@ -338,25 +406,6 @@ const saveEdit = () => {
 const cancelEdit = () => {
   isEditing.value = false;
   editedTitle.value = props.task.title;
-};
-
-const updateStatus = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  if (!target) return;
-  
-  const newStatus = target.value as TaskStatus;
-  
-  if (newStatus === 'done' && hasIncompleteSubtasks.value) {
-    alert(`Нельзя завершить задачу! Завершите сначала все подзадачи (${completedSubtasks.value}/${totalSubtasks.value})`);
-    target.value = props.task.status;
-    return;
-  }
-  
-  isStatusAutoUpdated.value = false;
-  wasReopened.value = false;
-  
-  emit('update', props.task.id, { status: newStatus });
-  emit('status-changed', props.task.id, newStatus);
 };
 
 const updateTags = (tags: string[]) => {
@@ -481,7 +530,6 @@ $transition-fast: 0.15s ease-in-out;
 $transition-base: 0.2s ease-in-out;
 $transition-slow: 0.3s ease-in-out;
 
-// Анимации
 @keyframes taskSlideIn {
   from {
     opacity: 0;
@@ -597,29 +645,40 @@ $transition-slow: 0.3s ease-in-out;
 
 .task-main-content {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 0.75rem;
   flex: 1;
   min-width: 0;
 }
 
 .status-selector-wrapper {
+  display: flex;
+  justify-content: flex-start;
+  width: fit-content;
   position: relative;
-  flex-shrink: 0;
 }
 
-.status-select {
-  font-size: 0.875rem;
-  background: white;
+.custom-select-wrapper {
+  position: relative;
+  width: fit-content;
+}
+
+.custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid $gray-300;
   border-radius: $border-radius;
-  padding: 0.5rem 0.75rem;
-  font-weight: 500;
-  transition: all $transition-base;
+  background: white;
   cursor: pointer;
+  transition: all $transition-base;
+  min-width: 160px;
+  font-size: 0.875rem;
+  font-weight: 500;
   
-  &:focus {
-    outline: none;
+  &:hover:not(:disabled) {
     border-color: $primary-color;
     box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
   }
@@ -630,8 +689,20 @@ $transition-slow: 0.3s ease-in-out;
     opacity: 0.7;
   }
   
-  &--disabled {
+  &.custom-select--disabled {
     animation: shake 0.5s ease-in-out;
+  }
+
+  &.custom-select--dimmed {
+    opacity: 0.6;
+    filter: grayscale(0.3);
+    background: linear-gradient(135deg, $gray-100 0%, $gray-200 100%);
+    
+    &:hover {
+      border-color: $gray-400;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
   }
   
   &.status--todo {
@@ -647,6 +718,104 @@ $transition-slow: 0.3s ease-in-out;
   &.status--done {
     color: #065f46;
     border-color: $success-color;
+  }
+}
+
+.selected-value {
+  flex: 1;
+}
+
+.dropdown-arrow {
+  transition: transform $transition-base;
+  font-size: 0.75rem;
+  color: $gray-500;
+  
+  &--open {
+    transform: rotate(180deg);
+  }
+}
+
+.custom-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid $gray-300;
+  border-radius: $border-radius;
+  box-shadow: $shadow-lg;
+  z-index: 10;
+  margin-top: 0.25rem;
+  overflow: hidden;
+}
+
+.select-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all $transition-base;
+  border-bottom: 1px solid $gray-100;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:hover {
+    background: $gray-50;
+  }
+  
+  &--selected {
+    background: $primary-color-light;
+    color: $primary-color;
+  }
+}
+
+.option-icon {
+  font-size: 1rem;
+}
+
+.option-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+// Анимация выезжания
+.select-dropdown-enter-active,
+.select-dropdown-leave-active {
+  transition: all 0.2s ease-in-out;
+}
+
+.select-dropdown-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.select-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.status-warning-indicator {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: $warning-color;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  animation: pulseGlow 2s infinite;
+  
+  .status-warning-icon {
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    line-height: 1;
   }
 }
 
@@ -1059,6 +1228,15 @@ $transition-slow: 0.3s ease-in-out;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  .status-selector-wrapper {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .status-select {
+    width: 100%;
   }
 }
 </style>
