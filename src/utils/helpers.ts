@@ -1,27 +1,61 @@
+/**
+ * Генерирует уникальный ID используя Web Crypto API
+ * @returns UUID v4 строку
+*/
 export const generateId = (): string => {
     return crypto.randomUUID();
 };
 
+/**
+ * Форматирует дату в русском формате DD.MM.YYYY
+ * @param date - Дата для форматирования
+ * @returns Отформатированная строка даты
+*/
 export const formatDate = (date: Date | string | null | undefined): string => {
-  // Проверяем, является ли аргумент допустимым объектом Date
-  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-    return 'Дата не указана'; // или вернуть пустую строку, или значение по умолчанию
+  const dateObj = date ? new Date(date) : null;
+  
+  if (!dateObj || isNaN(dateObj.getTime())) {
+    return 'Дата не указана';
   }
   try {
     return new Intl.DateTimeFormat('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+    }).format(dateObj);
   } catch (error) {
     console.error('Ошибка форматирования даты:', error);
-    return 'Неверная дата'; // Запасной вариант на случай ошибки
+    return 'Неверная дата';
   }
 };
 
+/**
+ * Форматирует дату и время в расширенном формате
+ * @param date - Дата для форматирования
+ * @returns Полную строку даты и времени
+*/
+export const formatDateTime = (date: Date | string | undefined): string => {
+  if (!date) return 'Неизвестно';
+  
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return dateObj.toLocaleDateString('ru-RU', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+/**
+ * Обертка для работы с localStorage с обработкой ошибок
+*/
 export const storage = {
+    /**
+     * Получает данные из localStorage
+     * @param key - Ключ для получения
+     * @returns Распарсенные данные или null при ошибке
+    */
     get: (key: string) => {
         try {
         const item = localStorage.getItem(key);
@@ -31,7 +65,13 @@ export const storage = {
         }
     },
 
-    set: (key: string, value: any) => {
+    /**
+     * Сохраняет данные в localStorage
+     * @param key - Ключ для сохранения
+     * @param value - Значение для сохранения
+     * @returns true при успешном сохранении, false при ошибке
+    */
+    set: (key: string, value: object) => {
         try {
         localStorage.setItem(key, JSON.stringify(value));
         return true;

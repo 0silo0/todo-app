@@ -18,6 +18,15 @@ export interface Project {
   color: string;
   createdAt: Date;
   tasks: Task[];
+  updatedAt?: Date;
+  availableTags: string[];
+  tags: string[];
+}
+
+export interface ProjectFilters {
+  search: string;
+  tags: string[];
+  status: 'all' | 'active' | 'completed';
 }
 
 export interface Filters {
@@ -30,7 +39,7 @@ export interface Filters {
 export interface AppData {
   projects: Project[];
   filters: Filters;
-  availableTags: string[];
   currentProjectId: string;
   version?: string;
+  projectFilters: ProjectFilters;
 }

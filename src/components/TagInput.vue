@@ -20,31 +20,19 @@
         <input
           v-model="tagInput"
           @keydown.enter="addCurrentTag"
-          @keydown.backspace="handleBackspace"
           @blur="addCurrentTag"
           placeholder="Добавить тег..."
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
         />
-        
-        <div
-          v-if="filteredAvailableTags.length && tagInput"
-          class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-32 overflow-y-auto"
-        >
-          <button
-            v-for="tag in filteredAvailableTags"
-            :key="tag"
-            @click="selectTag(tag)"
-            class="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
-          >
-            {{ tag }}
-          </button>
+        <div class="flex space-x-4 mt-2 text-xs text-gray-500 italic text-green-500">
+          <span>Для добавления тега нажмите Enter или вне области ввода</span>
         </div>
       </div>
     </div>
   </template>
   
   <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { ref, watch } from 'vue';
   
   interface Props {
     modelValue: string[];
@@ -61,41 +49,31 @@
   
   const selectedTags = ref<string[]>(props.modelValue);
   const tagInput = ref('');
-  
-  const filteredAvailableTags = computed(() => {
-    return props.availableTags.filter(tag => 
-      tag.toLowerCase().includes(tagInput.value.toLowerCase()) &&
-      !selectedTags.value.includes(tag)
-    );
-  });
+
+  watch(() => props.modelValue, (newValue) => {
+    if (JSON.stringify(newValue) !== JSON.stringify(selectedTags.value)) {
+      selectedTags.value = [...newValue];
+    }
+  }, { immediate: true, deep: true });
   
   const addCurrentTag = () => {
-    if (tagInput.value.trim() && !selectedTags.value.includes(tagInput.value.trim())) {
-      const newTag = tagInput.value.trim();
-      selectedTags.value.push(newTag);
-      emit('update:modelValue', selectedTags.value);
-      emit('addTag', newTag);
+    const tag = tagInput.value.trim();
+    if (tag && !selectedTags.value.includes(tag)) {
+      const newTags = [...selectedTags.value, tag];
+      selectedTags.value = newTags;
+      emit('update:modelValue', newTags);
+      
+      if (!props.availableTags.includes(tag)) {
+        emit('addTag', tag);
+      }
       tagInput.value = '';
     }
   };
-  
-  const selectTag = (tag: string) => {
-    if (!selectedTags.value.includes(tag)) {
-      selectedTags.value.push(tag);
-      emit('update:modelValue', selectedTags.value);
-      tagInput.value = '';
-    }
-  };
-  
+
   const removeTag = (tag: string) => {
-    selectedTags.value = selectedTags.value.filter(t => t !== tag);
-    emit('update:modelValue', selectedTags.value);
-  };
-  
-  const handleBackspace = (event: KeyboardEvent) => {
-    if (tagInput.value === '' && selectedTags.value.length > 0) {
-      selectedTags.value.pop();
-      emit('update:modelValue', selectedTags.value);
-    }
+    // Создаем новый массив вместо мутации
+    const newTags = selectedTags.value.filter(t => t !== tag);
+    selectedTags.value = newTags;
+    emit('update:modelValue', newTags);
   };
   </script>

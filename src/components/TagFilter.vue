@@ -1,5 +1,6 @@
 <template>
   <div class="tag-filter">
+    <!-- Заголовок со счетчиком выбранных тегов -->
     <label class="block text-sm font-medium text-gray-700 mb-2">
       🏷️ Теги
       <span v-if="selectedTags.length > 0" class="text-xs text-gray-500">
@@ -13,7 +14,7 @@
       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:border-blue-500"
     />
     
-    <div class="tag-list border border-gray-300 rounded-lg p-2 max-h-32 overflow-y-auto">
+    <div class="tag-list border border-gray-300 rounded-lg p-2 max-h-50 overflow-y-auto">
       <div v-if="filteredTags.length === 0 && !showNoTagOption" class="text-center text-gray-500 text-sm py-2">
         Теги не найдены
       </div>
@@ -69,6 +70,17 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+
+/**
+ * КОМПОНЕНТ ФИЛЬТРАЦИИ ПО ТЕГАМ С ПОДСЧЕТОМ
+ * 
+ * Особенности:
+ * - Подсчет количества задач для каждого тега
+ * - Специальная опция "Без тега"
+ * - Поиск с фильтрацией
+ * - Визуальная обратная связь с количеством
+ * - Групповые операции (выбрать все/очистить)
+*/
 
 interface Props {
   availableTags: string[];
